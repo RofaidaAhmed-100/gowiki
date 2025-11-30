@@ -3,6 +3,8 @@ package main
 import (
     "fmt"
     "os"
+	"log"
+    "net/http"
 )
 
 type Page struct {
@@ -10,13 +12,11 @@ type Page struct {
     Body  []byte
 }
 
-// الميثود save
 func (p *Page) save() error {
     filename := p.Title + ".txt"
     return os.WriteFile(filename, p.Body, 0600)
 }
 
-// الدالة loadPage
 func loadPage(title string) (*Page, error) {
     filename := title + ".txt"
     body, err := os.ReadFile(filename)
@@ -25,21 +25,14 @@ func loadPage(title string) (*Page, error) {
     }
     return &Page{Title: title, Body: body}, nil
 }
-
-// الدالة main
-func main() {
-    p1 := &Page{Title: "TestPage", Body: []byte("This is a sample Page.")}
-    err := p1.save()
-    if err != nil {
-        fmt.Println("Error saving page:", err)
-        return
-    }
-
-    p2, err := loadPage("TestPage")
-    if err != nil {
-        fmt.Println("Error loading page:", err)
-        return
-    }
-
-    fmt.Println(string(p2.Body))
+func viewHandler(w http.ResponseWriter, r *http.Request) {
+    title := r.URL.Path[len("/view/"):]
+    p, _ := loadPage(title)
+    fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.Title, p.Body)
 }
+
+func main() {
+    http.HandleFunc("/view/", viewHandler)
+    log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
